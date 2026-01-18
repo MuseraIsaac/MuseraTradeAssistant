@@ -29,6 +29,7 @@ enum ENUM_TA_APP_TAB
 // ------------------------------
 enum ENUM_TA_SIDE
   {
+   TA_SIDE_NONE = -1,
    TA_SIDE_BUY  = 0,
    TA_SIDE_SELL = 1
   };
@@ -38,6 +39,13 @@ enum ENUM_TA_ORDER_KIND
    TA_ORDER_MARKET = 0,
    TA_ORDER_LIMIT  = 1,
    TA_ORDER_STOP   = 2
+  };
+
+// Order builder intent (market vs pending)
+enum ENUM_TA_ORDER_ACTION
+  {
+   TA_ACTION_MARKET  = 0,
+   TA_ACTION_PENDING = 1
   };
 
 // For virtual orders module
@@ -59,6 +67,9 @@ enum ENUM_TA_RISK_MODE
    TA_RISK_MONEY         = 3   // fixed money risk (account currency)
   };
 
+// Legacy alias for UI wording
+#define TA_RISK_FIXED_LOTS TA_RISK_FIXED_LOT
+
 // Risk inputs reference point
 enum ENUM_TA_RISK_BASIS
   {
@@ -76,6 +87,29 @@ enum ENUM_TA_RR_MODE
   };
 
 // ------------------------------
+// SL/TP modes (compatibility with older UI)
+// ------------------------------
+enum ENUM_TA_SL_MODE
+  {
+   TA_SL_NONE   = 0,
+   TA_SL_POINTS = 1,
+   TA_SL_PRICE  = 2,
+   TA_SL_RR     = 3
+  };
+
+enum ENUM_TA_TP_MODE
+  {
+   TA_TP_NONE   = 0,
+   TA_TP_POINTS = 1,
+   TA_TP_PRICE  = 2,
+   TA_TP_RR     = 3
+  };
+
+// Legacy aliases for points/pips naming.
+#define TA_SL_PIPS TA_SL_POINTS
+#define TA_TP_PIPS TA_TP_POINTS
+
+// ------------------------------
 // Partial TP / scaling out
 // ------------------------------
 enum ENUM_TA_PARTIAL_SCHEMA
@@ -90,6 +124,13 @@ enum ENUM_TA_PARTIAL_TRIGGER
    TA_PARTIAL_TRIGGER_BY_R     = 1  // trigger by R multiple (e.g., 1R/2R/3R)
   };
 
+// Legacy partials mode (UI uses by-R vs by-points)
+enum ENUM_TA_PARTIALS_MODE
+  {
+   TA_PARTIALS_BY_R      = 0,
+   TA_PARTIALS_BY_POINTS = 1
+  };
+
 // ------------------------------
 // Break-even logic
 // ------------------------------
@@ -100,6 +141,10 @@ enum ENUM_TA_BE_MODE
    TA_BE_AT_PIPS      = 2,  // move SL to entry when profit reaches X points
    TA_BE_AFTER_TP1    = 3   // move to BE after TP1 partial is executed
   };
+
+// Legacy aliases used by UI text
+#define TA_BE_BY_R    TA_BE_AT_R
+#define TA_BE_BY_PIPS TA_BE_AT_PIPS
 
 // ------------------------------
 // Trailing logic

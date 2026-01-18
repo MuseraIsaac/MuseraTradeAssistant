@@ -307,7 +307,6 @@ public:
                            const MqlTradeResult &result)
    {
       // Optional: could auto-unregister on close events. Not required; OnTimer prunes.
-      (void)ctx; (void)st; (void)trans; (void)request; (void)result;
    }
 };
 

@@ -128,7 +128,7 @@ private:
       else return;
 
       string err="";
-      (void)ModifySLTP(ticket, ctx.magic, sl_new, tp_cur, err);
+      ModifySLTP(ticket, ctx.magic, sl_new, tp_cur, err);
    }
 
 public:
@@ -144,7 +144,6 @@ public:
 
    virtual void RegisterPosition(const ulong position_ticket, const TA_Context &ctx, const TA_State &st) override
    {
-      (void)ctx; (void)st;
       AddTicket(position_ticket);
    }
 

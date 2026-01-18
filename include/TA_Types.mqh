@@ -11,6 +11,9 @@
 #ifndef __MUSERA_TA_TYPES_MQH__
 #define __MUSERA_TA_TYPES_MQH__
 
+#include <Trade/Trade.mqh>
+
+#include "TA_Constants.mqh"
 #include "TA_Enums.mqh"
 
 // ------------------------------
@@ -247,10 +250,13 @@ struct TA_NotifySettings
 // ------------------------------
 struct TA_OrderPlan
 {
+   ENUM_TA_ORDER_ACTION action;
    // Intent
    string         symbol;
    ENUM_TA_SIDE   side;
    ENUM_TA_ORDER_KIND kind;
+   ulong          magic;
+   uint           deviation;
 
    // Volumes / pricing
    double         volume;    // lots (already validated/normalized by broker rules)
@@ -262,9 +268,10 @@ struct TA_OrderPlan
    double         tp1;
    double         tp2;
    double         tp3;
+   int            tp_count;
+   double         tp_levels[TA_MAX_TP_LEVELS];
 
    // Metadata
-   ulong          magic;
    string         comment;
 
    // Broker-related (optional)
@@ -272,6 +279,10 @@ struct TA_OrderPlan
    ENUM_ORDER_TYPE_FILLING filling;
    ENUM_ORDER_TYPE_TIME    time_type;
    datetime       expiration;
+
+   // Built request (used by TA_OrderExecutor)
+   MqlTradeRequest req;
+   TA_Result       build_res;
 
    // Snapshot of configs used for this plan (useful for managers)
    TA_PartialSettings partials;

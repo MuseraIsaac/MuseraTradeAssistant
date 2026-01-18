@@ -235,7 +235,6 @@ public:
       m_last_fire_ms = 0;
       m_last_vk = -1;
 
-      (void)state; // unused for now
    }
 
    void OnTimer(const TA_Context &ctx, const TA_State &state)
@@ -243,14 +242,11 @@ public:
       // Reserved for future:
       // - long-press hotkeys
       // - displaying helper overlay
-      (void)ctx; (void)state;
    }
 
    void OnChartEvent(const TA_Context &ctx, const TA_State &state,
                      const int id, const long &lparam, const double &dparam, const string &sparam)
    {
-      (void)state;
-      (void)sparam;
 
       if(!m_enabled) return;
       if(id != CHARTEVENT_KEYDOWN) return;

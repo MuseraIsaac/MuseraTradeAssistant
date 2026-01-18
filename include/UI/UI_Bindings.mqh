@@ -77,8 +77,6 @@ public:
    // Attach is optional; it simply keeps pointers for convenience.
    void Attach(const TA_Context &ctx, UI_App &ui, TA_State &state)
    {
-      (void)ctx;
-      (void)state;
       m_ui = &ui;
       m_attached = true;
    }
@@ -154,9 +152,6 @@ public:
    // this method is intentionally conservative (no-op).
    void SyncCoreToUI(const TA_Context &ctx, UI_App &ui, TA_State &state)
    {
-      (void)ctx;
-      (void)ui;
-      (void)state;
 
       // No-op by default.
       // If you later change tabs to store UI control values internally
@@ -169,7 +164,6 @@ public:
    // Convenience: safe UI refresh from core state (used by EA after preset load).
    void RefreshUIFromState(const TA_Context &ctx)
    {
-      (void)ctx;
       // Deprecated overload retained for compatibility; use RefreshUIFromState(ctx, state).
    }
 

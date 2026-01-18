@@ -241,8 +241,6 @@ public:
 
    bool Init(const TA_Context &ctx, const TA_State &state, const TA_BrokerRules &broker)
    {
-      (void)state;
-      (void)broker;
 
       m_magic  = ctx.magic;
       m_symbol = ctx.symbol;
@@ -258,7 +256,6 @@ public:
 
    void SyncConfig(const TA_Context &ctx, const TA_State &state)
    {
-      (void)state;
 
       // Ensure trade object uses correct magic if user changes it via preset.
       m_trade.SetExpertMagicNumber((uint)ctx.magic);
@@ -270,7 +267,6 @@ public:
 
    void OnTimer(const TA_Context &ctx, TA_State &state)
    {
-      (void)state;
       if(!m_inited)
          return;
 
@@ -283,10 +279,6 @@ public:
                            const MqlTradeRequest &request,
                            const MqlTradeResult &result)
    {
-      (void)state;
-      (void)trans;
-      (void)request;
-      (void)result;
 
       if(!m_inited)
          return;
@@ -313,7 +305,6 @@ public:
    //
    bool ExecuteCloseCommand(const TA_Context &ctx, TA_State &state, const ENUM_TA_CLOSE_CMD cmd)
    {
-      (void)state;
       if(!m_inited)
          return false;
 
@@ -365,8 +356,6 @@ public:
 
       // If you have a notifications module, you can emit messages at caller level.
       // Here we only return success.
-      (void)closed;
-      (void)deleted;
       return true;
    }
 };

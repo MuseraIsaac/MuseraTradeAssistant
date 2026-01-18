@@ -157,7 +157,6 @@ public:
 
    virtual bool Init(const TA_Context &ctx, const TA_State &st)
    {
-      (void)ctx; (void)st;
       Reset();
       return true;
    }
@@ -169,13 +168,11 @@ public:
 
    virtual void SyncConfig(const TA_Context &ctx, const TA_State &st)
    {
-      (void)ctx; (void)st;
       // No cached config here; it reads from state on every timer call.
    }
 
    virtual bool RegisterPosition(const TA_Context &ctx, const TA_State &st, const ulong ticket)
    {
-      (void)st;
 
       if(ticket == 0)
          return false;
@@ -245,7 +242,6 @@ public:
 
    virtual void UnregisterPosition(const TA_Context &ctx, const TA_State &st, const ulong ticket)
    {
-      (void)ctx; (void)st;
       int idx = FindIndex(ticket);
       if(idx >= 0)
          RemoveIndex(idx);
@@ -384,14 +380,12 @@ public:
 
    virtual void OnTick(const TA_Context &ctx, const TA_State &st)
    {
-      (void)ctx; (void)st;
       // Intentionally tick-light; core loop runs on timer.
    }
 
    virtual void OnChartEvent(const TA_Context &ctx, const TA_State &st,
                              const int id, const long &lparam, const double &dparam, const string &sparam)
    {
-      (void)ctx; (void)st; (void)id; (void)lparam; (void)dparam; (void)sparam;
       // No chart interactions for this strategy.
    }
 
@@ -400,7 +394,6 @@ public:
                                    const MqlTradeRequest &request,
                                    const MqlTradeResult &result)
    {
-      (void)ctx; (void)st; (void)trans; (void)request; (void)result;
       // Optional: could remove tickets on POSITION closed; timer cleanup is sufficient.
    }
 };
