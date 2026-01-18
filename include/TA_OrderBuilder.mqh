@@ -80,23 +80,34 @@ private:
       out_sl = 0.0;
 
       if(st.sl_mode == TA_SL_NONE)
-         return TA__Ok(res);
+      {
+         TA__Ok(res);
+         return true;
+      }
 
       if(st.sl_mode == TA_SL_POINTS)
       {
          if(st.sl_points <= 0)
-            return TA__Fail(res, 1101, "SL points must be > 0.");
+         {
+            TA__Fail(res, 1101, "SL points must be > 0.");
+            return false;
+         }
          const double pt = SymbolInfoDouble(ctx.symbol, SYMBOL_POINT);
          if(pt <= 0.0)
-            return TA__Fail(res, 1102, "Symbol POINT is invalid.");
+         {
+            TA__Fail(res, 1102, "Symbol POINT is invalid.");
+            return false;
+         }
          const double raw = (is_buy ? (entry_price - st.sl_points*pt)
                                     : (entry_price + st.sl_points*pt));
          out_sl = br.NormalizePrice(raw);
-         return TA__Ok(res);
+         TA__Ok(res);
+         return true;
       }
 
       // Future extension: TA_SL_ATR, TA_SL_SWING, TA_SL_CUSTOM, etc.
-      return TA__Fail(res, 1109, "Unsupported SL mode in TA_OrderBuilder (implement in BuildSL).");
+      TA__Fail(res, 1109, "Unsupported SL mode in TA_OrderBuilder (implement in BuildSL).");
+      return false;
    }
 
    // Build TP levels (supports: NONE, POINTS, RR, LEVELS) via TA_RR
@@ -138,8 +149,9 @@ public:
 
       TA_Result r;
       TA_BrokerRules br;
-      if(!br.Init(ctx, r))
+      if(!br.Init(ctx))
       {
+         TA__Fail(r, 1200, "Failed to init broker rules.");
          out_plan.build_res = r;
          return false;
       }
@@ -155,7 +167,8 @@ public:
                              : SymbolInfoDouble(ctx.symbol, SYMBOL_BID));
       if(!TA__IsFinite(entry) || entry <= 0.0)
       {
-         out_plan.build_res = TA_Result{false, 1201, "Unable to read Bid/Ask for entry price."};
+         TA__Fail(r, 1201, "Unable to read Bid/Ask for entry price.");
+         out_plan.build_res = r;
          return false;
       }
       entry = br.NormalizePrice(entry);
@@ -216,7 +229,8 @@ public:
       out_plan.req.deviation   = out_plan.deviation;
       out_plan.req.type_filling= TA__PickFilling(out_plan.symbol);
       out_plan.req.type_time   = ORDER_TIME_GTC;
-      out_plan.req.comment     = TA_APP_NAME;
+      out_plan.comment         = TA_PROJECT_NAME;
+      out_plan.req.comment     = out_plan.comment;
 
       // Final validation
       TA_Result v;
@@ -226,7 +240,8 @@ public:
          return false;
       }
 
-      out_plan.build_res = TA__Ok(v);
+      TA__Ok(v);
+      out_plan.build_res = v;
       return true;
    }
 
@@ -243,15 +258,17 @@ public:
 
       TA_Result r;
       TA_BrokerRules br;
-      if(!br.Init(ctx, r))
+      if(!br.Init(ctx))
       {
+         TA__Fail(r, 1300, "Failed to init broker rules.");
          out_plan.build_res = r;
          return false;
       }
 
       if(pending_price <= 0.0 || !TA__IsFinite(pending_price))
       {
-         out_plan.build_res = TA_Result{false, 1301, "Pending price is invalid."};
+         TA__Fail(r, 1301, "Pending price is invalid.");
+         out_plan.build_res = r;
          return false;
       }
 
@@ -314,7 +331,8 @@ public:
       out_plan.req.deviation   = out_plan.deviation;
       out_plan.req.type_filling= TA__PickFilling(out_plan.symbol);
       out_plan.req.type_time   = ORDER_TIME_GTC;
-      out_plan.req.comment     = TA_APP_NAME;
+      out_plan.comment         = TA_PROJECT_NAME;
+      out_plan.req.comment     = out_plan.comment;
 
       // Validate pending plan
       TA_Result v;
@@ -324,7 +342,8 @@ public:
          return false;
       }
 
-      out_plan.build_res = TA__Ok(v);
+      TA__Ok(v);
+      out_plan.build_res = v;
       return true;
    }
 };

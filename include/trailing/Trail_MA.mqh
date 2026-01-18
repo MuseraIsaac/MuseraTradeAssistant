@@ -24,7 +24,7 @@
 
 // Forward declarations from project includes
 struct TA_Context;
-struct TA_State;
+class TA_State;
 class TA_BrokerRules;
 
 //+------------------------------------------------------------------+

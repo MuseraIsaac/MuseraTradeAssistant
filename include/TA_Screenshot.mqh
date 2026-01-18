@@ -20,7 +20,7 @@
 #include "TA_Types.mqh"   // TA_Context
 
 // Forward declaration (TA_State is defined in TA_State.mqh which the EA includes earlier)
-struct TA_State;
+class TA_State;
 
 // ------------------------------ TA_Screenshot ------------------------------
 class TA_Screenshot

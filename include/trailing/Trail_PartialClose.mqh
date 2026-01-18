@@ -13,7 +13,7 @@
 
 // Forward declarations (defined in project includes)
 struct TA_Context;
-struct TA_State;
+class TA_State;
 
 //+------------------------------------------------------------------+
 //| Trail_PartialClose                                                |
