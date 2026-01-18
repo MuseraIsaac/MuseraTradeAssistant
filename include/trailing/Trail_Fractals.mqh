@@ -177,7 +177,7 @@ public:
          if(m_pos[i].last_fractal_time == frac_time && PriceEquals(sym, new_sl, m_pos[i].last_sl))
             continue;
 
-         int err = 0;
+         string err = "";
          if(!ModifySL(ticket, ctx.magic, new_sl, err))
             continue;
 

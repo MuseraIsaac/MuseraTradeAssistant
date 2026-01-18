@@ -21,10 +21,15 @@
 //+------------------------------------------------------------------+
 bool TA__RetcodeOk(const uint retcode)
 {
-   return (retcode == TRADE_RETCODE_DONE ||
-           retcode == TRADE_RETCODE_DONE_PARTIAL ||
-           retcode == TRADE_RETCODE_PLACED ||
-           retcode == TRADE_RETCODE_ACCEPTED);
+   if(retcode == TRADE_RETCODE_DONE ||
+      retcode == TRADE_RETCODE_DONE_PARTIAL ||
+      retcode == TRADE_RETCODE_PLACED)
+      return true;
+#ifdef TRADE_RETCODE_ACCEPTED
+   if(retcode == TRADE_RETCODE_ACCEPTED)
+      return true;
+#endif
+   return false;
 }
 
 string TA__RetcodeToString(const uint retcode)
@@ -122,7 +127,7 @@ public:
 
       // Apply sane defaults if missing.
       if(req.deviation <= 0)
-         req.deviation = TA_DEFAULT_DEVIATION_POINTS;
+         req.deviation = TA_DFLT_DEVIATION_POINTS;
 
       // Basic sanity
       if(req.symbol == "")
@@ -196,7 +201,7 @@ public:
       req.position = position_ticket;
       req.sl       = sl;
       req.tp       = tp;
-      req.deviation = TA_DEFAULT_DEVIATION_POINTS;
+      req.deviation = TA_DFLT_DEVIATION_POINTS;
 
       ResetLastError();
       bool ok = OrderSend(req, tr);
