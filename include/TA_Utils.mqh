@@ -137,6 +137,13 @@ inline double TA_PipsToPrice(const string sym, const double pips)
    return pips * pip;
 }
 
+inline double TA_PipSize(const string sym)
+{
+   const double pt = TA_Point(sym);
+   const int digits = TA_SymbolDigits(sym);
+   return ((digits==3 || digits==5) ? (pt * 10.0) : pt);
+}
+
 inline double TA_PriceToPoints(const string sym, const double price_diff)
 {
    const double pt = TA_Point(sym);
@@ -152,6 +159,11 @@ inline double TA_Bid(const string sym)
 inline double TA_Ask(const string sym)
 {
    double v=0.0; SymbolInfoDouble(sym, SYMBOL_ASK, v); return v;
+}
+
+inline double TA_PriceNormalize(const string sym, const double price)
+{
+   return TA_NormalizePrice(sym, price);
 }
 
 // -----------------------------
@@ -184,6 +196,24 @@ inline double TA_ValuePerPoint(const string sym)
    const double pt = TA_Point(sym);
    if(tick_value<=0.0 || tick_size<=0.0 || pt<=0.0) return 0.0;
    return tick_value * (pt / tick_size);
+}
+
+// -----------------------------
+// Logging helpers
+// -----------------------------
+inline void TA_LogInfo(const string msg)
+{
+   Print(TA_LOG_PREFIX + "[INFO] " + msg);
+}
+
+inline void TA_LogWarn(const string msg)
+{
+   Print(TA_LOG_PREFIX + "[WARN] " + msg);
+}
+
+inline void TA_LogError(const string msg)
+{
+   Print(TA_LOG_PREFIX + "[ERROR] " + msg);
 }
 
 // -----------------------------

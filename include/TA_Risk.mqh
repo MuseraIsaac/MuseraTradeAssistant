@@ -171,11 +171,11 @@ public:
             return TA__RiskFail(res, 620, "Fixed lot must be > 0.");
 
          out_raw    = st.fixed_lot;
-         out_volume = br.NormalizeVolume(out_raw);
+         out_volume = br.NormalizeLots(out_raw);
 
          // Clamp flags
-         if(out_volume < br.MinVolume() - 1e-12) { out_volume = br.MinVolume(); out_clamped_min=true; }
-         if(out_volume > br.MaxVolume() + 1e-12) { out_volume = br.MaxVolume(); out_clamped_max=true; }
+         if(out_volume < br.LotMin() - 1e-12) { out_volume = br.LotMin(); out_clamped_min=true; }
+         if(out_volume > br.LotMax() + 1e-12) { out_volume = br.LotMax(); out_clamped_max=true; }
 
          // Derived actual risk money (if SL is known and vpp is valid)
          if(sl_points > 0.0 && vpp > 0.0)
@@ -205,17 +205,24 @@ public:
       const double raw = target_money / money_per_1lot;
       out_raw = raw;
 
-      double vol = br.NormalizeVolume(raw);
+      double vol = br.NormalizeLots(raw);
 
       // Clamp to broker limits (normalization may already clamp by step rounding, not by min/max)
-      if(vol < br.MinVolume() - 1e-12) { vol = br.MinVolume(); out_clamped_min = true; }
-      if(vol > br.MaxVolume() + 1e-12) { vol = br.MaxVolume(); out_clamped_max = true; }
+      if(vol < br.LotMin() - 1e-12) { vol = br.LotMin(); out_clamped_min = true; }
+      if(vol > br.LotMax() + 1e-12) { vol = br.LotMax(); out_clamped_max = true; }
 
       // Validity check
-      if(!br.IsVolumeValid(vol))
+      const double min_vol = br.LotMin();
+      const double max_vol = br.LotMax();
+      const double step    = br.LotStep();
+      double snapped = vol;
+      if(step > 0.0)
+         snapped = min_vol + TA_RoundToStep(vol - min_vol, step);
+
+      if(vol < min_vol - 1e-12 || vol > max_vol + 1e-12 || (step > 0.0 && MathAbs(vol - snapped) > 1e-8))
       {
          string msg = StringFormat("Computed volume invalid. min=%.2f max=%.2f step=%.2f got=%.2f",
-                                   br.MinVolume(), br.MaxVolume(), br.VolumeStep(), vol);
+                                   min_vol, max_vol, step, vol);
          return TA__RiskFail(res, 624, msg);
       }
 

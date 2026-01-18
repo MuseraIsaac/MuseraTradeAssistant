@@ -29,7 +29,7 @@ private:
       double init_volume;
 
       // Snapshot of settings at registration time
-      ENUM_TA_PARTIAL_SCHEMA  schema;
+      ENUM_TA_PARTIALS_MODE   mode;
       ENUM_TA_PARTIAL_TRIGGER trigger;
 
       double at_r[3];        // RR target for TP1/2/3
@@ -133,14 +133,14 @@ private:
       const bool is_buy = IsBuy(t.type);
       const double dir  = is_buy ? 1.0 : -1.0;
 
-      if(t.schema == TA_PARTIAL_SCHEMA_RR)
+      if(t.mode == TA_PARTIALS_BY_R)
       {
          int r_pts = RPoints(t.symbol, t.entry_price, pos_sl, st);
          if(r_pts <= 0) return false;
          out_price = t.entry_price + dir * ((double)r_pts * point) * t.at_r[stage];
          return true;
       }
-      if(t.schema == TA_PARTIAL_SCHEMA_POINTS)
+      if(t.mode == TA_PARTIALS_BY_POINTS)
       {
          if(t.at_points[stage] <= 0) return false;
          out_price = t.entry_price + dir * ((double)t.at_points[stage] * point);
@@ -325,24 +325,23 @@ public:
       string sym; long type; double entry, vol, sl;
       if(!GetPosSnapshot(position_ticket, sym, type, entry, vol, sl)) return;
 
-      TA_PC_Track &t = m_items[m_count];
-      ZeroMemory(t);
+      ZeroMemory(m_items[m_count]);
 
-      t.ticket      = position_ticket;
-      t.symbol      = sym;
-      t.type        = type;
-      t.entry_price = entry;
-      t.init_volume = vol;
+      m_items[m_count].ticket      = position_ticket;
+      m_items[m_count].symbol      = sym;
+      m_items[m_count].type        = type;
+      m_items[m_count].entry_price = entry;
+      m_items[m_count].init_volume = vol;
 
-      t.schema  = st.tp_partials_schema;
-      t.trigger = st.tp_partials_trigger;
+      m_items[m_count].mode    = st.tp_partials_mode;
+      m_items[m_count].trigger = st.tp_partials_trigger;
 
-      t.at_r[0] = st.tp1_at_r; t.at_r[1] = st.tp2_at_r; t.at_r[2] = st.tp3_at_r;
-      t.at_points[0] = st.tp1_at_points; t.at_points[1] = st.tp2_at_points; t.at_points[2] = st.tp3_at_points;
-      t.close_pct[0] = st.tp1_close_pct; t.close_pct[1] = st.tp2_close_pct; t.close_pct[2] = st.tp3_close_pct;
+      m_items[m_count].at_r[0] = st.tp1_at_r; m_items[m_count].at_r[1] = st.tp2_at_r; m_items[m_count].at_r[2] = st.tp3_at_r;
+      m_items[m_count].at_points[0] = st.tp1_at_points; m_items[m_count].at_points[1] = st.tp2_at_points; m_items[m_count].at_points[2] = st.tp3_at_points;
+      m_items[m_count].close_pct[0] = st.tp1_close_pct; m_items[m_count].close_pct[1] = st.tp2_close_pct; m_items[m_count].close_pct[2] = st.tp3_close_pct;
 
-      t.fired[0] = false; t.fired[1] = false; t.fired[2] = false;
-      t.last_attempt_ms = 0;
+      m_items[m_count].fired[0] = false; m_items[m_count].fired[1] = false; m_items[m_count].fired[2] = false;
+      m_items[m_count].last_attempt_ms = 0;
 
       m_count++;
    }
@@ -360,13 +359,11 @@ public:
 
       for(int i=0; i<m_count; i++)
       {
-         TA_PC_Track &t = m_items[i];
+         TryStage(m_items[i], st, 0);
+         TryStage(m_items[i], st, 1);
+         TryStage(m_items[i], st, 2);
 
-         TryStage(t, st, 0);
-         TryStage(t, st, 1);
-         TryStage(t, st, 2);
-
-         if(t.fired[0] && t.fired[1] && t.fired[2])
+         if(m_items[i].fired[0] && m_items[i].fired[1] && m_items[i].fired[2])
          {
             RemoveAt(i);
             i--;

@@ -161,25 +161,45 @@ public:
    ENUM_TA_TRAIL_SCOPE trailing_scope;
    bool              trailing_only_profit;
    int               trailing_min_interval_ms;
+   double            trailing_start_profit_pips;
 
    // common trailing params
    int    trail_start_points;
    int    trail_step_points;
    int    trail_distance_points;
 
+   // Pips-based trailing (Trail_Pips)
+   double trail_pips_distance;
+   double trail_pips_step;
+   double trail_pips_start;
+   bool   trail_pips_only_profit;
+
    // ATR/MA/SAR extras (used by trailing modules)
    int    trail_atr_period;
    double trail_atr_mult;
+   double trail_atr_buffer_pips;
 
    int             trail_ma_period;
    ENUM_MA_METHOD  trail_ma_method;
    ENUM_APPLIED_PRICE trail_ma_price;
    int             trail_ma_shift;
+   double          trail_ma_buffer_pips;
 
    double trail_sar_step;
    double trail_sar_max;
+   double trail_sar_buffer_pips;
 
    int    trail_hl_bars_back;
+   int    trail_hl_lookback_bars;
+   double trail_hl_buffer_pips;
+
+   int    trail_fractal_left;
+   int    trail_fractal_right;
+   double trail_fractal_buffer_pips;
+
+   bool   trail_partial_enabled;
+   double trail_partial_every_r;
+   double trail_partial_close_pct;
 
    // ---------------- OCO / Virtual orders ----------------
    ENUM_TA_OCO_MODE oco_mode;
@@ -289,23 +309,42 @@ public:
       trailing_scope = TA_TRAIL_SCOPE_CURRENT_SYMBOL;
       trailing_only_profit = true;
       trailing_min_interval_ms = 250;
+      trailing_start_profit_pips = 0.0;
 
       trail_start_points = 0;
       trail_step_points = (int)MathRound(TA_DFLT_TRAIL_STEP_PIPS * 10.0);
       trail_distance_points = (int)MathRound(TA_DFLT_TRAIL_DIST_PIPS * 10.0);
 
+      trail_pips_distance = TA_DFLT_TRAIL_DIST_PIPS;
+      trail_pips_step = TA_DFLT_TRAIL_STEP_PIPS;
+      trail_pips_start = 0.0;
+      trail_pips_only_profit = true;
+
       trail_atr_period = TA_DFLT_ATR_PERIOD;
       trail_atr_mult = TA_DFLT_ATR_MULT;
+      trail_atr_buffer_pips = 0.0;
 
       trail_ma_period = TA_DFLT_MA_PERIOD;
       trail_ma_method = (ENUM_MA_METHOD)TA_DFLT_MA_METHOD;
       trail_ma_price = PRICE_CLOSE;
       trail_ma_shift = 0;
+      trail_ma_buffer_pips = 0.0;
 
       trail_sar_step = 0.02;
       trail_sar_max = 0.2;
+      trail_sar_buffer_pips = 0.0;
 
       trail_hl_bars_back = 1;
+      trail_hl_lookback_bars = 1;
+      trail_hl_buffer_pips = 0.0;
+
+      trail_fractal_left = 2;
+      trail_fractal_right = 2;
+      trail_fractal_buffer_pips = 0.0;
+
+      trail_partial_enabled = false;
+      trail_partial_every_r = 1.0;
+      trail_partial_close_pct = 25.0;
 
       oco_mode = TA_OCO_OFF;
       vorders_enabled = false;
@@ -416,6 +455,37 @@ public:
 
       if(be_lock_points < 0) be_lock_points = 0;
       if(be_offset_points < 0) be_offset_points = 0;
+
+      if(trailing_min_interval_ms < 0) trailing_min_interval_ms = 0;
+      if(trailing_start_profit_pips < 0.0) trailing_start_profit_pips = 0.0;
+
+      if(trail_pips_distance < 0.0) trail_pips_distance = 0.0;
+      if(trail_pips_step < 0.0) trail_pips_step = 0.0;
+      if(trail_pips_start < 0.0) trail_pips_start = 0.0;
+
+      if(trail_atr_period < 1) trail_atr_period = 1;
+      if(trail_atr_mult < 0.0) trail_atr_mult = 0.0;
+      if(trail_atr_buffer_pips < 0.0) trail_atr_buffer_pips = 0.0;
+
+      if(trail_ma_period < 1) trail_ma_period = 1;
+      if(trail_ma_shift < 0) trail_ma_shift = 0;
+      if(trail_ma_buffer_pips < 0.0) trail_ma_buffer_pips = 0.0;
+
+      if(trail_sar_step < 0.0) trail_sar_step = 0.0;
+      if(trail_sar_max < 0.0) trail_sar_max = 0.0;
+      if(trail_sar_buffer_pips < 0.0) trail_sar_buffer_pips = 0.0;
+
+      if(trail_hl_bars_back < 1) trail_hl_bars_back = 1;
+      if(trail_hl_lookback_bars < 1) trail_hl_lookback_bars = 1;
+      if(trail_hl_buffer_pips < 0.0) trail_hl_buffer_pips = 0.0;
+
+      if(trail_fractal_left < 1) trail_fractal_left = 1;
+      if(trail_fractal_right < 1) trail_fractal_right = 1;
+      if(trail_fractal_buffer_pips < 0.0) trail_fractal_buffer_pips = 0.0;
+
+      if(trail_partial_every_r < 0.0) trail_partial_every_r = 0.0;
+      if(trail_partial_close_pct < 0.0) trail_partial_close_pct = 0.0;
+      if(trail_partial_close_pct > 100.0) trail_partial_close_pct = 100.0;
 
       // Sync legacy
       SyncLegacy();
@@ -564,18 +634,34 @@ public:
       out_text += "trailing_scope=" + IntegerToString((int)trailing_scope) + "\n";
       out_text += "trailing_only_profit=" + IntegerToString(trailing_only_profit?1:0) + "\n";
       out_text += "trailing_min_interval_ms=" + IntegerToString(trailing_min_interval_ms) + "\n";
+      out_text += "trailing_start_profit_pips=" + DoubleToString(trailing_start_profit_pips, 8) + "\n";
       out_text += "trail_start_points=" + IntegerToString(trail_start_points) + "\n";
       out_text += "trail_step_points=" + IntegerToString(trail_step_points) + "\n";
       out_text += "trail_distance_points=" + IntegerToString(trail_distance_points) + "\n";
+      out_text += "trail_pips_distance=" + DoubleToString(trail_pips_distance, 8) + "\n";
+      out_text += "trail_pips_step=" + DoubleToString(trail_pips_step, 8) + "\n";
+      out_text += "trail_pips_start=" + DoubleToString(trail_pips_start, 8) + "\n";
+      out_text += "trail_pips_only_profit=" + IntegerToString(trail_pips_only_profit?1:0) + "\n";
       out_text += "trail_atr_period=" + IntegerToString(trail_atr_period) + "\n";
       out_text += "trail_atr_mult=" + DoubleToString(trail_atr_mult, 8) + "\n";
+      out_text += "trail_atr_buffer_pips=" + DoubleToString(trail_atr_buffer_pips, 8) + "\n";
       out_text += "trail_ma_period=" + IntegerToString(trail_ma_period) + "\n";
       out_text += "trail_ma_method=" + IntegerToString((int)trail_ma_method) + "\n";
       out_text += "trail_ma_price=" + IntegerToString((int)trail_ma_price) + "\n";
       out_text += "trail_ma_shift=" + IntegerToString(trail_ma_shift) + "\n";
+      out_text += "trail_ma_buffer_pips=" + DoubleToString(trail_ma_buffer_pips, 8) + "\n";
       out_text += "trail_sar_step=" + DoubleToString(trail_sar_step, 8) + "\n";
       out_text += "trail_sar_max=" + DoubleToString(trail_sar_max, 8) + "\n";
+      out_text += "trail_sar_buffer_pips=" + DoubleToString(trail_sar_buffer_pips, 8) + "\n";
       out_text += "trail_hl_bars_back=" + IntegerToString(trail_hl_bars_back) + "\n";
+      out_text += "trail_hl_lookback_bars=" + IntegerToString(trail_hl_lookback_bars) + "\n";
+      out_text += "trail_hl_buffer_pips=" + DoubleToString(trail_hl_buffer_pips, 8) + "\n";
+      out_text += "trail_fractal_left=" + IntegerToString(trail_fractal_left) + "\n";
+      out_text += "trail_fractal_right=" + IntegerToString(trail_fractal_right) + "\n";
+      out_text += "trail_fractal_buffer_pips=" + DoubleToString(trail_fractal_buffer_pips, 8) + "\n";
+      out_text += "trail_partial_enabled=" + IntegerToString(trail_partial_enabled?1:0) + "\n";
+      out_text += "trail_partial_every_r=" + DoubleToString(trail_partial_every_r, 8) + "\n";
+      out_text += "trail_partial_close_pct=" + DoubleToString(trail_partial_close_pct, 8) + "\n";
 
       out_text += "oco_mode=" + IntegerToString((int)oco_mode) + "\n";
       out_text += "vorders_enabled=" + IntegerToString(vorders_enabled?1:0) + "\n";
@@ -690,18 +776,34 @@ public:
          else if(k=="trailing_scope") trailing_scope=(ENUM_TA_TRAIL_SCOPE)StringToInteger(v);
          else if(k=="trailing_only_profit") trailing_only_profit=(StringToInteger(v)!=0);
          else if(k=="trailing_min_interval_ms") trailing_min_interval_ms=(int)StringToInteger(v);
+         else if(k=="trailing_start_profit_pips") trailing_start_profit_pips=StringToDouble(v);
          else if(k=="trail_start_points") trail_start_points=(int)StringToInteger(v);
          else if(k=="trail_step_points") trail_step_points=(int)StringToInteger(v);
          else if(k=="trail_distance_points") trail_distance_points=(int)StringToInteger(v);
+         else if(k=="trail_pips_distance") trail_pips_distance=StringToDouble(v);
+         else if(k=="trail_pips_step") trail_pips_step=StringToDouble(v);
+         else if(k=="trail_pips_start") trail_pips_start=StringToDouble(v);
+         else if(k=="trail_pips_only_profit") trail_pips_only_profit=(StringToInteger(v)!=0);
          else if(k=="trail_atr_period") trail_atr_period=(int)StringToInteger(v);
          else if(k=="trail_atr_mult") trail_atr_mult=StringToDouble(v);
+         else if(k=="trail_atr_buffer_pips") trail_atr_buffer_pips=StringToDouble(v);
          else if(k=="trail_ma_period") trail_ma_period=(int)StringToInteger(v);
          else if(k=="trail_ma_method") trail_ma_method=(ENUM_MA_METHOD)StringToInteger(v);
          else if(k=="trail_ma_price") trail_ma_price=(ENUM_APPLIED_PRICE)StringToInteger(v);
          else if(k=="trail_ma_shift") trail_ma_shift=(int)StringToInteger(v);
+         else if(k=="trail_ma_buffer_pips") trail_ma_buffer_pips=StringToDouble(v);
          else if(k=="trail_sar_step") trail_sar_step=StringToDouble(v);
          else if(k=="trail_sar_max") trail_sar_max=StringToDouble(v);
+         else if(k=="trail_sar_buffer_pips") trail_sar_buffer_pips=StringToDouble(v);
          else if(k=="trail_hl_bars_back") trail_hl_bars_back=(int)StringToInteger(v);
+         else if(k=="trail_hl_lookback_bars") trail_hl_lookback_bars=(int)StringToInteger(v);
+         else if(k=="trail_hl_buffer_pips") trail_hl_buffer_pips=StringToDouble(v);
+         else if(k=="trail_fractal_left") trail_fractal_left=(int)StringToInteger(v);
+         else if(k=="trail_fractal_right") trail_fractal_right=(int)StringToInteger(v);
+         else if(k=="trail_fractal_buffer_pips") trail_fractal_buffer_pips=StringToDouble(v);
+         else if(k=="trail_partial_enabled") trail_partial_enabled=(StringToInteger(v)!=0);
+         else if(k=="trail_partial_every_r") trail_partial_every_r=StringToDouble(v);
+         else if(k=="trail_partial_close_pct") trail_partial_close_pct=StringToDouble(v);
 
          else if(k=="oco_mode") oco_mode=(ENUM_TA_OCO_MODE)StringToInteger(v);
          else if(k=="vorders_enabled") vorders_enabled=(StringToInteger(v)!=0);

@@ -107,7 +107,8 @@ private:
       out_ma = 0.0;
       if(!EnsureHandle(ctx)) return false;
 
-      double buf[1];
+      double buf[];
+      ArrayResize(buf, 1);
       ArraySetAsSeries(buf, true);
 
       // Copy MA at bar shift (0=current bar, 1=previous bar, etc.)

@@ -437,7 +437,7 @@ private:
                             TA_Result &out_res) const
      {
       out_res = TA__Ok();
-      const double min_pts = br.stops_level_points;
+      const double min_pts = br.StopsLevelPoints();
       if(min_pts<=0.0) return true;
 
       double dist = TA_PointsBetweenPrices(br, entry_price, io_tp);
