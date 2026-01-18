@@ -33,7 +33,7 @@
 
 // Forward declare to avoid tight include coupling.
 // (TA_State should already be defined before including this file.)
-struct TA_State;
+class TA_State;
 
 //--------------------------- internal helpers ---------------------------//
 string TA__Trim(const string s)

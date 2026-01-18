@@ -18,6 +18,13 @@
 #define TA_PROJECT_VENDOR        "Musera Isaac"
 #define TA_LOG_PREFIX            "[MTA] "
 
+// ----------------------------- Error codes -------------------------
+// Keep stable for validation / UI messaging.
+#define TA_ERR_INVALID_PARAM     1000
+#define TA_ERR_SL_REQUIRED       1001
+#define TA_ERR_SL_TOO_CLOSE      1002
+#define TA_ERR_TP_INVALID        1003
+
 // ----------------------------- Directories --------------------------
 // NOTE: These are informational / convenience strings (not used by MetaTrader internally).
 // All paths are relative to the Terminal Data Folder (File -> Open Data Folder).

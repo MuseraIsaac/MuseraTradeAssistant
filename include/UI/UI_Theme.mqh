@@ -20,7 +20,7 @@
 #define __MUSERA_UI_THEME_MQH__
 
 // Forward declarations (avoid hard dependency order)
-struct TA_State;
+class TA_State;
 struct TA_Context;
 
 // ------------------------------- Theme IDs -------------------------------

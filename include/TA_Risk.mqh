@@ -104,7 +104,7 @@ public:
          return TA__RiskOk(res);
       }
 
-      if(st.risk_mode == TA_RISK_PERCENT)
+      if(st.risk_mode == TA_RISK_BALANCE_PCT || st.risk_mode == TA_RISK_EQUITY_PCT)
       {
          if(st.risk_percent <= 0.0)
             return TA__RiskFail(res, 611, "Risk percent must be > 0.");
