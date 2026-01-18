@@ -25,7 +25,7 @@
 
 // Forward declarations
 struct TA_Context;
-class TA_State;
+struct TA_State;
 class TA_BrokerRules;
 
 //+------------------------------------------------------------------+

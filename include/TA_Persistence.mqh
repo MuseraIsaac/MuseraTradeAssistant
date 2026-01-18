@@ -192,7 +192,7 @@ private:
    {
       string meta = "";
       meta += "# MuseraTradeAssistant meta\n";
-      meta += "magic=" + TA_PRESET_MAGIC + "\n";
+      meta += "magic=" + IntegerToString((int)TA_PRESET_MAGIC) + "\n";
       meta += "version=" + TA_VERSION + "\n";
       meta += "last_preset=" + m_last_preset + "\n";
       return TA__WriteTextFile(TA__MetaFilePath(), meta);
@@ -233,7 +233,7 @@ public:
 
       string file_text = "";
       file_text += "# MuseraTradeAssistant preset\n";
-      file_text += "magic=" + TA_PRESET_MAGIC + "\n";
+      file_text += "magic=" + IntegerToString((int)TA_PRESET_MAGIC) + "\n";
       file_text += "version=" + TA_VERSION + "\n";
       file_text += "name=" + name + "\n";
       file_text += "saved_at=" + TimeToString(TimeCurrent(), TIME_DATE|TIME_MINUTES|TIME_SECONDS) + "\n";

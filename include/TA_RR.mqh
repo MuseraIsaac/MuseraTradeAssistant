@@ -71,7 +71,10 @@ public:
       out_res = TA__Ok();
 
       if(!TA__IsFinite(entry_price) || entry_price<=0.0)
-         return (out_res=TA__Fail("Entry price invalid", TA_ERR_INVALID_PARAM), false);
+      {
+         out_res = TA__Fail("Entry price invalid", TA_ERR_INVALID_PARAM);
+         return false;
+      }
 
       // No TP case: if tp_points==0 and not from RR, allow TP disabled.
       if(!st.tp_from_rr)
@@ -84,10 +87,16 @@ public:
 
       // RR-based TP requires a valid SL.
       if(!TA__IsFinite(sl_price) || sl_price<=0.0)
-         return (out_res=TA__Fail("SL price required for RR", TA_ERR_SL_REQUIRED), false);
+      {
+         out_res = TA__Fail("SL price required for RR", TA_ERR_SL_REQUIRED);
+         return false;
+      }
 
       if(st.rr_target<=0.0)
-         return (out_res=TA__Fail("RR target must be > 0", TA_ERR_INVALID_PARAM), false);
+      {
+         out_res = TA__Fail("RR target must be > 0", TA_ERR_INVALID_PARAM);
+         return false;
+      }
 
       return CalcTPFromRR(br, is_buy, entry_price, sl_price, st.rr_target, out_tp_price, out_res);
      }
@@ -106,26 +115,47 @@ public:
       out_res = TA__Ok();
 
       if(rr_target<=0.0 || !TA__IsFinite(rr_target))
-         return (out_res=TA__Fail("RR target must be > 0", TA_ERR_INVALID_PARAM), false);
+      {
+         out_res = TA__Fail("RR target must be > 0", TA_ERR_INVALID_PARAM);
+         return false;
+      }
       if(entry_price<=0.0 || !TA__IsFinite(entry_price))
-         return (out_res=TA__Fail("Entry price invalid", TA_ERR_INVALID_PARAM), false);
+      {
+         out_res = TA__Fail("Entry price invalid", TA_ERR_INVALID_PARAM);
+         return false;
+      }
       if(sl_price<=0.0 || !TA__IsFinite(sl_price))
-         return (out_res=TA__Fail("SL price invalid", TA_ERR_INVALID_PARAM), false);
+      {
+         out_res = TA__Fail("SL price invalid", TA_ERR_INVALID_PARAM);
+         return false;
+      }
 
       // Risk points from entry to SL (positive).
       double risk_points = TA_PointsBetweenPrices(br, entry_price, sl_price);
       if(risk_points<=0.0)
-         return (out_res=TA__Fail("SL distance is zero", TA_ERR_SL_REQUIRED), false);
+      {
+         out_res = TA__Fail("SL distance is zero", TA_ERR_SL_REQUIRED);
+         return false;
+      }
 
       // Directional sanity: SL must be on the loss side.
       if(is_buy && sl_price>=entry_price)
-         return (out_res=TA__Fail("For BUY, SL must be below entry", TA_ERR_SL_TOO_CLOSE), false);
+      {
+         out_res = TA__Fail("For BUY, SL must be below entry", TA_ERR_SL_TOO_CLOSE);
+         return false;
+      }
       if(!is_buy && sl_price<=entry_price)
-         return (out_res=TA__Fail("For SELL, SL must be above entry", TA_ERR_SL_TOO_CLOSE), false);
+      {
+         out_res = TA__Fail("For SELL, SL must be above entry", TA_ERR_SL_TOO_CLOSE);
+         return false;
+      }
 
       double reward_points = risk_points * rr_target;
       if(reward_points<=0.0)
-         return (out_res=TA__Fail("Reward points invalid", TA_ERR_INVALID_PARAM), false);
+      {
+         out_res = TA__Fail("Reward points invalid", TA_ERR_INVALID_PARAM);
+         return false;
+      }
 
       // Compute TP from reward points.
       double tp = TA_PriceFromPoints(br, entry_price, reward_points, is_buy);
@@ -133,9 +163,15 @@ public:
 
       // Must be on profit side.
       if(is_buy && tp<=entry_price)
-         return (out_res=TA__Fail("Computed TP not above entry", TA_ERR_TP_INVALID), false);
+      {
+         out_res = TA__Fail("Computed TP not above entry", TA_ERR_TP_INVALID);
+         return false;
+      }
       if(!is_buy && tp>=entry_price)
-         return (out_res=TA__Fail("Computed TP not below entry", TA_ERR_TP_INVALID), false);
+      {
+         out_res = TA__Fail("Computed TP not below entry", TA_ERR_TP_INVALID);
+         return false;
+      }
 
       // Enforce broker stops level (TP distance from current price/entry).
       if(!EnforceStopsLevelTP(br, is_buy, entry_price, tp, out_res))
@@ -157,7 +193,10 @@ public:
       out_res = TA__Ok();
 
       if(entry_price<=0.0 || !TA__IsFinite(entry_price))
-         return (out_res=TA__Fail("Entry price invalid", TA_ERR_INVALID_PARAM), false);
+      {
+         out_res = TA__Fail("Entry price invalid", TA_ERR_INVALID_PARAM);
+         return false;
+      }
 
       if(tp_points<=0.0 || !TA__IsFinite(tp_points))
         {
@@ -170,9 +209,15 @@ public:
       tp = TA_NormalizePrice(br, tp);
 
       if(is_buy && tp<=entry_price)
-         return (out_res=TA__Fail("TP must be above entry", TA_ERR_TP_INVALID), false);
+      {
+         out_res = TA__Fail("TP must be above entry", TA_ERR_TP_INVALID);
+         return false;
+      }
       if(!is_buy && tp>=entry_price)
-         return (out_res=TA__Fail("TP must be below entry", TA_ERR_TP_INVALID), false);
+      {
+         out_res = TA__Fail("TP must be below entry", TA_ERR_TP_INVALID);
+         return false;
+      }
 
       if(!EnforceStopsLevelTP(br, is_buy, entry_price, tp, out_res))
          return false;
@@ -194,30 +239,48 @@ public:
       out_res = TA__Ok();
 
       if(entry_price<=0.0 || sl_price<=0.0 || tp_price<=0.0)
-         return (out_res=TA__Fail("Prices must be > 0", TA_ERR_INVALID_PARAM), false);
+      {
+         out_res = TA__Fail("Prices must be > 0", TA_ERR_INVALID_PARAM);
+         return false;
+      }
       if(!TA__IsFinite(entry_price) || !TA__IsFinite(sl_price) || !TA__IsFinite(tp_price))
-         return (out_res=TA__Fail("Price is NaN/INF", TA_ERR_INVALID_PARAM), false);
+      {
+         out_res = TA__Fail("Price is NaN/INF", TA_ERR_INVALID_PARAM);
+         return false;
+      }
 
       // Directional sanity.
       if(is_buy)
         {
          if(!(sl_price<entry_price && tp_price>entry_price))
-            return (out_res=TA__Fail("For BUY, SL<entry<TP required", TA_ERR_INVALID_PARAM), false);
+         {
+            out_res = TA__Fail("For BUY, SL<entry<TP required", TA_ERR_INVALID_PARAM);
+            return false;
+         }
         }
       else
         {
          if(!(sl_price>entry_price && tp_price<entry_price))
-            return (out_res=TA__Fail("For SELL, TP<entry<SL required", TA_ERR_INVALID_PARAM), false);
+         {
+            out_res = TA__Fail("For SELL, TP<entry<SL required", TA_ERR_INVALID_PARAM);
+            return false;
+         }
         }
 
       double risk_points   = TA_PointsBetweenPrices(br, entry_price, sl_price);
       double reward_points = TA_PointsBetweenPrices(br, entry_price, tp_price);
       if(risk_points<=0.0 || reward_points<=0.0)
-         return (out_res=TA__Fail("Distance points invalid", TA_ERR_INVALID_PARAM), false);
+      {
+         out_res = TA__Fail("Distance points invalid", TA_ERR_INVALID_PARAM);
+         return false;
+      }
 
       out_rr = reward_points / risk_points;
       if(!TA__IsFinite(out_rr) || out_rr<=0.0)
-         return (out_res=TA__Fail("RR invalid", TA_ERR_INVALID_PARAM), false);
+      {
+         out_res = TA__Fail("RR invalid", TA_ERR_INVALID_PARAM);
+         return false;
+      }
 
       return true;
      }
@@ -244,7 +307,10 @@ public:
          ArrayResize(out_prices, TA_MAX_TP_LEVELS);
 
       if(!TA__IsFinite(entry_price) || entry_price<=0.0)
-         return (out_res=TA__Fail("Entry price invalid", TA_ERR_INVALID_PARAM), false);
+      {
+         out_res = TA__Fail("Entry price invalid", TA_ERR_INVALID_PARAM);
+         return false;
+      }
 
       // If any TP level uses RR, we need SL.
       // We'll compute each level depending on its type.
@@ -257,14 +323,20 @@ public:
          const double target = st.tp_levels[i].target;
 
          if(target<=0.0 || !TA__IsFinite(target))
-            return (out_res=TA__Fail("TP level target invalid", TA_ERR_INVALID_PARAM), false);
+         {
+            out_res = TA__Fail("TP level target invalid", TA_ERR_INVALID_PARAM);
+            return false;
+         }
 
          double tp = 0.0;
 
          if(ttype==TA_TARGET_R)
            {
             if(sl_price<=0.0 || !TA__IsFinite(sl_price))
-               return (out_res=TA__Fail("SL required for RR-based TP levels", TA_ERR_SL_REQUIRED), false);
+            {
+               out_res = TA__Fail("SL required for RR-based TP levels", TA_ERR_SL_REQUIRED);
+               return false;
+            }
 
             TA_Result r2;
             if(!CalcTPFromRR(br, is_buy, entry_price, sl_price, target, tp, r2))
@@ -288,9 +360,15 @@ public:
 
             // Sanity: must be on profit side.
             if(is_buy && tp<=entry_price)
-               return (out_res=TA__Fail("TP level price must be above entry", TA_ERR_TP_INVALID), false);
+            {
+               out_res = TA__Fail("TP level price must be above entry", TA_ERR_TP_INVALID);
+               return false;
+            }
             if(!is_buy && tp>=entry_price)
-               return (out_res=TA__Fail("TP level price must be below entry", TA_ERR_TP_INVALID), false);
+            {
+               out_res = TA__Fail("TP level price must be below entry", TA_ERR_TP_INVALID);
+               return false;
+            }
 
             // Stops level check.
             if(!EnforceStopsLevelTP(br, is_buy, entry_price, tp, out_res))
@@ -336,9 +414,15 @@ private:
 
       // Re-check direction.
       if(is_buy && io_tp<=entry_price)
-         return (out_res=TA__Fail("TP cannot satisfy stops level", TA_ERR_TP_INVALID), false);
+      {
+         out_res = TA__Fail("TP cannot satisfy stops level", TA_ERR_TP_INVALID);
+         return false;
+      }
       if(!is_buy && io_tp>=entry_price)
-         return (out_res=TA__Fail("TP cannot satisfy stops level", TA_ERR_TP_INVALID), false);
+      {
+         out_res = TA__Fail("TP cannot satisfy stops level", TA_ERR_TP_INVALID);
+         return false;
+      }
 
       return true;
      }

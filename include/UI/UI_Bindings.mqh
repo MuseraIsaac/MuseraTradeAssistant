@@ -46,7 +46,6 @@ class UI_Bindings
 private:
    // Pointers to the "current" instances (optional – useful for future refactors)
    UI_App   *m_ui;
-   TA_State *m_state;
 
    // Registered callbacks (EA-level)
    TA_CB_PlaceMarket      m_cb_place_market;
@@ -63,7 +62,6 @@ public:
    UI_Bindings()
    {
       m_ui = NULL;
-      m_state = NULL;
 
       m_cb_place_market     = NULL;
       m_cb_set_trailing_mode= NULL;
@@ -80,8 +78,8 @@ public:
    void Attach(const TA_Context &ctx, UI_App &ui, TA_State &state)
    {
       (void)ctx;
+      (void)state;
       m_ui = &ui;
-      m_state = &state;
       m_attached = true;
    }
 
@@ -171,8 +169,14 @@ public:
    // Convenience: safe UI refresh from core state (used by EA after preset load).
    void RefreshUIFromState(const TA_Context &ctx)
    {
-      if(m_ui == NULL || m_state == NULL) return;
-      m_ui.SyncFromState(ctx, *m_state);
+      (void)ctx;
+      // Deprecated overload retained for compatibility; use RefreshUIFromState(ctx, state).
+   }
+
+   void RefreshUIFromState(const TA_Context &ctx, TA_State &state)
+   {
+      if(m_ui == NULL) return;
+      m_ui.SyncFromState(ctx, state);
    }
 };
 

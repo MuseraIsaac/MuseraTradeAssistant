@@ -163,7 +163,7 @@ inline double TA_VolumeStep(const string sym) { return SymbolInfoDouble(sym, SYM
 
 inline double TA_NormalizeVolume(const string sym, double lots)
 {
-   double vmin  = TA_VolumeMin(sym)
+   double vmin  = TA_VolumeMin(sym);
    double vmax  = TA_VolumeMax(sym);
    double vstep = TA_VolumeStep(sym);
 
