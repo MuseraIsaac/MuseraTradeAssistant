@@ -285,6 +285,42 @@ public:
       return true;
      }
 
+   // Build TP ladder (TP1/TP2/TP3) based on current state.
+   // - If partials are enabled, uses tp_levels.
+   // - Otherwise returns a single TP (if enabled in state).
+   bool BuildTPPrices(const TA_Context &ctx,
+                      const TA_State   &st,
+                      const TA_BrokerRules &br,
+                      const bool is_buy,
+                      const double entry_price,
+                      const double sl_price,
+                      double &out_prices[],
+                      int &out_count,
+                      TA_Result &out_res) const
+     {
+      out_count = 0;
+      out_res = TA__Ok();
+
+      if(ArraySize(out_prices) < TA_MAX_TP_LEVELS)
+         ArrayResize(out_prices, TA_MAX_TP_LEVELS);
+      for(int i=0;i<TA_MAX_TP_LEVELS;i++)
+         out_prices[i] = 0.0;
+
+      if(st.tp_partials_enabled)
+         return BuildPartialTPPrices(ctx, st, br, is_buy, entry_price, sl_price, out_prices, out_count, out_res);
+
+      double tp = 0.0;
+      if(!CalcTPFromState(ctx, st, br, is_buy, entry_price, sl_price, tp, out_res))
+         return false;
+
+      if(tp > 0.0)
+      {
+         out_prices[0] = tp;
+         out_count = 1;
+      }
+      return true;
+     }
+
    // Build an ordered list of partial TP prices from st.tp_levels.
    // - Returns prices aligned to tick size.
    // - For SELL, targets are expected to increase by magnitude (RR/points), so prices will decrease.
@@ -299,7 +335,6 @@ public:
                              int &out_count,
                              TA_Result &out_res) const
      {
-      (void)ctx;
       out_count = 0;
       out_res = TA__Ok();
 

@@ -224,12 +224,9 @@ public:
       m_symbol = ctx.symbol;
       m_digits = (int)SymbolInfoInteger(ctx.symbol, SYMBOL_DIGITS);
       m_point  = SymbolInfoDouble(ctx.symbol, SYMBOL_POINT);
-      if(m_point <= 0.0) m_point = TA_SymbolPoint(ctx.symbol);
+      if(m_point <= 0.0) m_point = TA_Point(ctx.symbol);
 
       // You can later map styles/colors to st.ui_theme if you add them there.
-      (void)st;
-      (void)broker;
-
       m_inited = true;
       return true;
    }
@@ -251,9 +248,6 @@ public:
    // Optional: if you add style/theme options to TA_State you can apply them here.
    void SyncConfig(const TA_Context &ctx, const TA_State &st, const TA_BrokerRules &broker)
    {
-      (void)ctx;
-      (void)st;
-      (void)broker;
       // placeholder (theme mapping)
    }
 
@@ -280,96 +274,129 @@ public:
                       true,   // hidden
                       "ENTRY");
 
-      // SL line
-      if(st.sl_enabled && st.sl_points > 0)
+      double sl = 0.0;
+      double tp = 0.0;
+      bool sl_active = false;
+      bool tp_active = false;
+
+      if(st.sl_mode == TA_SL_POINTS && st.sl_points > 0)
       {
-         double sl = TA_NormalizePrice(ctx.symbol, PriceFromPoints(entry, st.sl_points, false));
+         sl = TA_NormalizePrice(ctx.symbol, PriceFromPoints(entry, st.sl_points, false));
+         sl_active = (sl > 0.0);
+      }
+      else if(st.sl_mode == TA_SL_PRICE && st.sl_price > 0.0)
+      {
+         sl = TA_NormalizePrice(ctx.symbol, st.sl_price);
+         sl_active = (sl > 0.0);
+      }
 
-         // ensure distance if TP also exists (helps consistent visuals)
-         double tp = 0.0;
-         if(st.tp_enabled && st.tp_points > 0)
-            tp = TA_NormalizePrice(ctx.symbol, PriceFromPoints(entry, st.tp_points, true));
+      if(st.tp_mode == TA_TP_POINTS && st.tp_points > 0)
+      {
+         tp = TA_NormalizePrice(ctx.symbol, PriceFromPoints(entry, st.tp_points, true));
+         tp_active = (tp > 0.0);
+      }
+      else if(st.tp_mode == TA_TP_PRICE && st.tp_price > 0.0)
+      {
+         tp = TA_NormalizePrice(ctx.symbol, st.tp_price);
+         tp_active = (tp > 0.0);
+      }
+      else if(st.tp_mode == TA_TP_RR && sl_active && st.rr_target > 0.0)
+      {
+         const int risk_pts = (st.sl_mode == TA_SL_POINTS ? st.sl_points : PointsFromPrice(entry, sl, false));
+         if(risk_pts > 0)
+         {
+            double p = entry + (m_is_buy ? +1.0 : -1.0) * (double)risk_pts * st.rr_target * m_point;
+            tp = TA_NormalizePrice(ctx.symbol, p);
+            tp_active = (tp > 0.0);
+         }
+      }
 
+      if(sl_active)
+      {
          broker.EnsureStopsDistance(sl, tp,
                                    (m_is_buy ? ORDER_TYPE_BUY : ORDER_TYPE_SELL),
                                    entry);
 
-         if(sl > 0.0)
-         {
-            TA__EnsureHLine(ctx.chart_id,
-                            TA__LineName(ctx, TA_LINE_SL),
-                            sl,
-                            m_sl_clr,
-                            m_sl_style,
-                            m_sl_w,
-                            true,   // draggable
-                            true,   // hidden
-                            "SL");
-         }
-         else
-         {
-            TA__ObjDeleteSafe(ctx.chart_id, TA__LineName(ctx, TA_LINE_SL));
-         }
+         TA__EnsureHLine(ctx.chart_id,
+                         TA__LineName(ctx, TA_LINE_SL),
+                         sl,
+                         m_sl_clr,
+                         m_sl_style,
+                         m_sl_w,
+                         true,   // draggable
+                         true,   // hidden
+                         "SL");
 
-         // TP line (main)
-         if(st.tp_enabled && st.tp_points > 0)
+         if(tp_active)
          {
-            tp = TA_NormalizePrice(ctx.symbol, PriceFromPoints(entry, st.tp_points, true));
             broker.EnsureStopsDistance(sl, tp,
                                        (m_is_buy ? ORDER_TYPE_BUY : ORDER_TYPE_SELL),
                                        entry);
 
-            if(tp > 0.0)
-            {
-               TA__EnsureHLine(ctx.chart_id,
-                               TA__LineName(ctx, TA_LINE_TP),
-                               tp,
-                               m_tp_clr,
-                               m_tp_style,
-                               m_tp_w,
-                               true,  // draggable
-                               true,
-                               "TP");
-            }
-            else
-            {
-               TA__ObjDeleteSafe(ctx.chart_id, TA__LineName(ctx, TA_LINE_TP));
-            }
+            TA__EnsureHLine(ctx.chart_id,
+                            TA__LineName(ctx, TA_LINE_TP),
+                            tp,
+                            m_tp_clr,
+                            m_tp_style,
+                            m_tp_w,
+                            true,  // draggable
+                            true,
+                            "TP");
          }
          else
          {
             TA__ObjDeleteSafe(ctx.chart_id, TA__LineName(ctx, TA_LINE_TP));
          }
 
-         // Partial TP lines (RR based) - only meaningful if SL exists (risk points)
-         const bool can_partials = (st.tp_partials_enabled && st.sl_enabled && st.sl_points > 0);
+         const bool can_partials = (st.tp_partials_enabled && sl_active);
          if(can_partials)
          {
-            const int risk_pts = st.sl_points;
+            const int risk_pts = (st.sl_mode == TA_SL_POINTS ? st.sl_points : PointsFromPrice(entry, sl, false));
+            const double dir = (m_is_buy ? +1.0 : -1.0);
 
-            if(st.partials.tp1_enabled && st.partials.tp1_rr > 0.0)
+            for(int i=0;i<TA_MAX_TP_LEVELS;i++)
             {
-               double p = entry + (m_is_buy ? +1.0 : -1.0) * (double)risk_pts * st.partials.tp1_rr * m_point;
-               p = TA_NormalizePrice(ctx.symbol, p);
-               TA__EnsureHLine(ctx.chart_id, TA__LineName(ctx, TA_LINE_TP1), p, m_tp1_clr, m_partial_style, m_partial_w, false, true, "TP1");
-            }
-            else TA__ObjDeleteSafe(ctx.chart_id, TA__LineName(ctx, TA_LINE_TP1));
+               const string name = (i==0 ? TA_LINE_TP1 : (i==1 ? TA_LINE_TP2 : TA_LINE_TP3));
+               const color clr = (i==0 ? m_tp1_clr : (i==1 ? m_tp2_clr : m_tp3_clr));
 
-            if(st.partials.tp2_enabled && st.partials.tp2_rr > 0.0)
-            {
-               double p = entry + (m_is_buy ? +1.0 : -1.0) * (double)risk_pts * st.partials.tp2_rr * m_point;
-               p = TA_NormalizePrice(ctx.symbol, p);
-               TA__EnsureHLine(ctx.chart_id, TA__LineName(ctx, TA_LINE_TP2), p, m_tp2_clr, m_partial_style, m_partial_w, false, true, "TP2");
-            }
-            else TA__ObjDeleteSafe(ctx.chart_id, TA__LineName(ctx, TA_LINE_TP2));
+               if(!st.tp_levels[i].enabled)
+               {
+                  TA__ObjDeleteSafe(ctx.chart_id, TA__LineName(ctx, name));
+                  continue;
+               }
 
-            if(st.partials.tp3_enabled && st.partials.tp3_rr > 0.0)
-            {
-               double p = entry + (m_is_buy ? +1.0 : -1.0) * (double)risk_pts * st.partials.tp3_rr * m_point;
-               p = TA_NormalizePrice(ctx.symbol, p);
-               TA__EnsureHLine(ctx.chart_id, TA__LineName(ctx, TA_LINE_TP3), p, m_tp3_clr, m_partial_style, m_partial_w, false, true, "TP3");
+               double lvl_price = 0.0;
+               if(st.tp_levels[i].type == TA_TARGET_R && risk_pts > 0)
+               {
+                  lvl_price = entry + dir * (double)risk_pts * st.tp_levels[i].target * m_point;
+               }
+               else if(st.tp_levels[i].type == TA_TARGET_POINTS)
+               {
+                  lvl_price = entry + dir * st.tp_levels[i].target * m_point;
+               }
+               else if(st.tp_levels[i].type == TA_TARGET_PRICE)
+               {
+                  lvl_price = st.tp_levels[i].target;
+               }
+
+               if(lvl_price > 0.0)
+               {
+                  lvl_price = TA_NormalizePrice(ctx.symbol, lvl_price);
+                  TA__EnsureHLine(ctx.chart_id,
+                                  TA__LineName(ctx, name),
+                                  lvl_price,
+                                  clr,
+                                  m_partial_style,
+                                  m_partial_w,
+                                  false,
+                                  true,
+                                  name);
+               }
+               else
+               {
+                  TA__ObjDeleteSafe(ctx.chart_id, TA__LineName(ctx, name));
+               }
             }
-            else TA__ObjDeleteSafe(ctx.chart_id, TA__LineName(ctx, TA_LINE_TP3));
          }
          else
          {
@@ -378,10 +405,8 @@ public:
             TA__ObjDeleteSafe(ctx.chart_id, TA__LineName(ctx, TA_LINE_TP3));
          }
 
-         // Break-even projected stop line (where SL will move to after trigger)
          if(st.be_enabled)
          {
-            // BE stop = entry +/- offset points (usually 0 = entry)
             const double be_stop = entry + (m_is_buy ? +1.0 : -1.0) * (double)st.be_offset_points * m_point;
             TA__EnsureHLine(ctx.chart_id,
                             TA__LineName(ctx, TA_LINE_BE),
@@ -400,7 +425,6 @@ public:
       }
       else
       {
-         // SL disabled => remove dependent lines
          TA__ObjDeleteSafe(ctx.chart_id, TA__LineName(ctx, TA_LINE_SL));
          TA__ObjDeleteSafe(ctx.chart_id, TA__LineName(ctx, TA_LINE_TP));
          TA__ObjDeleteSafe(ctx.chart_id, TA__LineName(ctx, TA_LINE_TP1));
@@ -421,7 +445,6 @@ public:
                      const string &sparam)
    {
       if(!m_inited) return;
-      (void)lparam; (void)dparam;
 
       // React to object drag/change
       if(id != CHARTEVENT_OBJECT_DRAG &&
@@ -441,8 +464,15 @@ public:
 
       // Current prices from objects (if present), else from state
       double sl = 0.0, tp = 0.0;
-      if(st.sl_enabled && st.sl_points > 0) sl = TA_NormalizePrice(ctx.symbol, PriceFromPoints(entry, st.sl_points, false));
-      if(st.tp_enabled && st.tp_points > 0) tp = TA_NormalizePrice(ctx.symbol, PriceFromPoints(entry, st.tp_points, true));
+      if(st.sl_mode == TA_SL_POINTS && st.sl_points > 0)
+         sl = TA_NormalizePrice(ctx.symbol, PriceFromPoints(entry, st.sl_points, false));
+      else if(st.sl_mode == TA_SL_PRICE && st.sl_price > 0.0)
+         sl = TA_NormalizePrice(ctx.symbol, st.sl_price);
+
+      if(st.tp_mode == TA_TP_POINTS && st.tp_points > 0)
+         tp = TA_NormalizePrice(ctx.symbol, PriceFromPoints(entry, st.tp_points, true));
+      else if(st.tp_mode == TA_TP_PRICE && st.tp_price > 0.0)
+         tp = TA_NormalizePrice(ctx.symbol, st.tp_price);
 
       // Read moved line
       if(sparam == name_sl)
@@ -459,21 +489,32 @@ public:
                                        entry))
          {
             // Revert visual to last known good
-            TA__SetHLinePriceSafe(ctx.chart_id, name_sl, PriceFromPoints(entry, st.sl_points, false));
-            if(st.tp_enabled) TA__SetHLinePriceSafe(ctx.chart_id, name_tp, PriceFromPoints(entry, st.tp_points, true));
+            double fallback_sl = (st.sl_mode == TA_SL_PRICE && st.sl_price > 0.0)
+                                 ? st.sl_price
+                                 : PriceFromPoints(entry, st.sl_points, false);
+            TA__SetHLinePriceSafe(ctx.chart_id, name_sl, fallback_sl);
+            if(st.tp_mode == TA_TP_POINTS && st.tp_points > 0)
+               TA__SetHLinePriceSafe(ctx.chart_id, name_tp, PriceFromPoints(entry, st.tp_points, true));
+            else if(st.tp_mode == TA_TP_PRICE && st.tp_price > 0.0)
+               TA__SetHLinePriceSafe(ctx.chart_id, name_tp, st.tp_price);
             return;
          }
 
          // Update state from (possibly adjusted) sl/tp
          st.sl_points = PointsFromPrice(entry, sl, false);
-         if(st.sl_points > 0) st.sl_enabled = true;
+         if(st.sl_points > 0)
+         {
+            st.sl_enabled = true;
+            st.sl_mode = TA_SL_POINTS;
+            st.sl_price = 0.0;
+         }
 
-         if(st.tp_enabled && tp > 0.0)
+         if(tp > 0.0 && st.tp_mode == TA_TP_POINTS)
             st.tp_points = PointsFromPrice(entry, tp, true);
 
          // Update objects to adjusted prices
          TA__SetHLinePriceSafe(ctx.chart_id, name_sl, sl);
-         if(st.tp_enabled && TA__ObjExists(ctx.chart_id, name_tp)) TA__SetHLinePriceSafe(ctx.chart_id, name_tp, tp);
+         if(TA__ObjExists(ctx.chart_id, name_tp)) TA__SetHLinePriceSafe(ctx.chart_id, name_tp, tp);
       }
       else if(sparam == name_tp)
       {
@@ -488,19 +529,30 @@ public:
                                        entry))
          {
             // Revert visual
-            TA__SetHLinePriceSafe(ctx.chart_id, name_tp, PriceFromPoints(entry, st.tp_points, true));
-            if(st.sl_enabled) TA__SetHLinePriceSafe(ctx.chart_id, name_sl, PriceFromPoints(entry, st.sl_points, false));
+            double fallback_tp = (st.tp_mode == TA_TP_PRICE && st.tp_price > 0.0)
+                                 ? st.tp_price
+                                 : PriceFromPoints(entry, st.tp_points, true);
+            TA__SetHLinePriceSafe(ctx.chart_id, name_tp, fallback_tp);
+            if(st.sl_mode == TA_SL_POINTS && st.sl_points > 0)
+               TA__SetHLinePriceSafe(ctx.chart_id, name_sl, PriceFromPoints(entry, st.sl_points, false));
+            else if(st.sl_mode == TA_SL_PRICE && st.sl_price > 0.0)
+               TA__SetHLinePriceSafe(ctx.chart_id, name_sl, st.sl_price);
             return;
          }
 
          st.tp_points = PointsFromPrice(entry, tp, true);
-         if(st.tp_points > 0) st.tp_enabled = true;
+         if(st.tp_points > 0)
+         {
+            st.tp_enabled = true;
+            st.tp_mode = TA_TP_POINTS;
+            st.tp_price = 0.0;
+         }
 
-         if(st.sl_enabled && sl > 0.0)
+         if(st.sl_mode == TA_SL_POINTS && sl > 0.0)
             st.sl_points = PointsFromPrice(entry, sl, false);
 
          TA__SetHLinePriceSafe(ctx.chart_id, name_tp, tp);
-         if(st.sl_enabled && TA__ObjExists(ctx.chart_id, name_sl)) TA__SetHLinePriceSafe(ctx.chart_id, name_sl, sl);
+         if(TA__ObjExists(ctx.chart_id, name_sl)) TA__SetHLinePriceSafe(ctx.chart_id, name_sl, sl);
       }
    }
 };

@@ -366,7 +366,6 @@ public:
 
    void Layout(const TA_Context &ctx, TA_State &st, const int x,const int y,const int w,const int h)
    {
-      (void)ctx; (void)st;
       m_x=x; m_y=y; m_w=w; m_h=h;
 
       const int pad = 8;
@@ -530,7 +529,6 @@ public:
    void OnChartEvent(const TA_Context &ctx, TA_State &st,
                      const int id, const long &lparam, const double &dparam, const string &sparam)
    {
-      (void)ctx; (void)lparam; (void)dparam;
 
       if(!m_visible) return;
 

@@ -216,15 +216,12 @@ public:
 
    bool Init(const TA_Context &ctx, const TA_State &state, const TA_BrokerRules &broker)
    {
-      (void)ctx;
-      (void)broker;
       SyncConfig(ctx, state);
       return true;
    }
 
    void SyncConfig(const TA_Context &ctx, const TA_State &state)
    {
-      (void)ctx;
       m_mode    = state.oco_mode;
       m_enabled = (m_mode != TA_OCO_NONE);
    }
@@ -256,7 +253,6 @@ public:
                            const MqlTradeRequest &request,
                            const MqlTradeResult &result)
    {
-      (void)result;
       SyncConfig(ctx, state);
       if(!ModeAllowsPending()) return;
 
@@ -295,4 +291,3 @@ public:
       CancelSiblingsPending(ctx, tag, trans.order);
    }
 };
-

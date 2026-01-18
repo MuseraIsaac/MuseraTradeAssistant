@@ -324,7 +324,6 @@ public:
                      const int id, const long &lparam,
                      const double &dparam, const string &sparam)
    {
-      (void)ctx; (void)state; (void)id; (void)lparam; (void)dparam; (void)sparam;
    }
 
    void OnTradeTransaction(const TA_Context &ctx, const TA_State &state,
@@ -332,7 +331,6 @@ public:
                            const MqlTradeRequest &request,
                            const MqlTradeResult &result)
    {
-      (void)ctx; (void)state; (void)trans; (void)request; (void)result;
    }
 };
 

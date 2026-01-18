@@ -396,7 +396,6 @@ public:
 
    bool Init(const TA_Context &ctx, const TA_State &state, const TA_BrokerRules &broker)
    {
-      (void)broker; // currently unused; kept for consistent Init(...) signature
 
       m_ctx   = ctx;
       m_state = state;
@@ -505,8 +504,6 @@ public:
                            const MqlTradeRequest &request,
                            const MqlTradeResult &result)
    {
-      (void)request;
-      (void)result;
 
       if(!m_inited) return;
       SyncConfig(ctx, state);
@@ -534,7 +531,6 @@ public:
                      const double &dparam,
                      const string &sparam)
    {
-      (void)ctx; (void)state; (void)id; (void)lparam; (void)dparam; (void)sparam;
       // Reserved: drag handles, on-chart virtual order lines, etc.
    }
 };

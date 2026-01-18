@@ -183,8 +183,6 @@ public:
    // Called from EA OnInit()
    void Init(const TA_Context &ctx, const TA_State &st)
    {
-      (void)ctx;
-      (void)st;
       m_last_error = "";
       EnsureSubdir(m_subdir);
    }
@@ -192,25 +190,21 @@ public:
    // Optional future: read config from state (folder/prefix/size)
    void SyncConfig(const TA_Context &ctx, const TA_State &st)
    {
-      (void)ctx;
-      (void)st;
       // Intentionally empty for now.
    }
 
    // Optional hooks (no-op)
-   void OnTimer(const TA_Context &ctx, const TA_State &st) { (void)ctx; (void)st; }
+   void OnTimer(const TA_Context &ctx, const TA_State &st) { }
    void OnTradeTransaction(const TA_Context &ctx, const TA_State &st,
                            const MqlTradeTransaction &trans,
                            const MqlTradeRequest &request,
                            const MqlTradeResult &result)
    {
-      (void)ctx; (void)st; (void)trans; (void)request; (void)result;
    }
 
    void OnChartEvent(const TA_Context &ctx, const TA_State &st,
                      const int id, const long &lparam, const double &dparam, const string &sparam)
    {
-      (void)ctx; (void)st; (void)id; (void)lparam; (void)dparam; (void)sparam;
    }
 
    // ------------------------------ Configuration ------------------------------

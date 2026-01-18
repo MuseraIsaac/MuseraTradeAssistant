@@ -242,7 +242,6 @@ public:
 
    virtual bool Init(const TA_Context &ctx, const TA_State &st, const TA_BrokerRules &br) override
    {
-      (void)br;
       m_symbol = ctx.symbol;
       m_magic  = ctx.magic;
       m_tf     = (ctx.tf==PERIOD_CURRENT ? (ENUM_TIMEFRAMES)Period() : ctx.tf);
@@ -268,7 +267,6 @@ public:
 
    virtual void RegisterPosition(const ulong ticket, const TA_Context &ctx, const TA_State &st) override
    {
-      (void)ctx; (void)st;
       AddTicket(ticket);
    }
 
@@ -329,7 +327,6 @@ public:
                                    const MqlTradeRequest &request,
                                    const MqlTradeResult &result) override
    {
-      (void)ctx; (void)st; (void)trans; (void)request; (void)result;
       // No-op (positions are pruned in OnTimer)
    }
 
@@ -337,7 +334,6 @@ public:
                              const int id, const long &lparam,
                              const double &dparam, const string &sparam) override
    {
-      (void)ctx; (void)st; (void)id; (void)lparam; (void)dparam; (void)sparam;
       // No interactive objects for this trailing mode.
    }
 };

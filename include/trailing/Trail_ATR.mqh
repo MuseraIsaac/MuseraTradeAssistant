@@ -134,7 +134,6 @@ public:
 
    virtual bool Init(const TA_Context &ctx, const TA_State &st, const TA_BrokerRules &br)
    {
-      (void)br;
       m_symbol = ctx.symbol;
       m_magic  = ctx.magic;
 
@@ -157,7 +156,6 @@ public:
 
    virtual void SyncConfig(const TA_Context &ctx, const TA_State &st)
    {
-      (void)ctx;
 
       const int    new_period  = MathMax(2, st.trail_atr_period);
       const double new_mult    = (st.trail_atr_mult<=0.0 ? 2.0 : st.trail_atr_mult);
@@ -175,7 +173,6 @@ public:
 
    virtual void RegisterPosition(const ulong ticket, const TA_Context &ctx, const TA_State &st)
    {
-      (void)ctx; (void)st;
       if(ticket==0) return;
       if(IndexOfTicket(ticket)>=0) return;
 

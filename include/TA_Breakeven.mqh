@@ -70,7 +70,6 @@ public:
    // Initialize with current state and broker settings
    bool Init(const TA_Context &ctx, const TA_State &state, const TA_BrokerRules &broker)
    {
-      (void)broker;
 
       m_symbol = ctx.symbol;
       m_digits = (int)SymbolInfoInteger(m_symbol, SYMBOL_DIGITS);
@@ -233,8 +232,6 @@ public:
    // Optional: use for faster response if you call it from OnTick
    void OnTick(const TA_Context &ctx, const TA_State &state)
    {
-      (void)ctx;
-      (void)state;
       // Intentionally empty. You can route OnTick to OnTimer logic if desired.
    }
 
@@ -245,7 +242,6 @@ public:
                            const MqlTradeRequest &request,
                            const MqlTradeResult &result)
    {
-      (void)ctx; (void)state; (void)request; (void)result;
 
       // If a position is closed, it will disappear from PositionSelectByTicket()
       // and will be removed on next OnTimer().
@@ -269,7 +265,6 @@ public:
                      const double &dparam,
                      const string &sparam)
    {
-      (void)ctx; (void)state; (void)id; (void)lparam; (void)dparam; (void)sparam;
    }
 
 private:

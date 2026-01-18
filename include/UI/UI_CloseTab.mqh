@@ -119,11 +119,10 @@ public:
       ObjectSetInteger(0, N("allpend"), OBJPROP_HIDDEN, !v);
    }
 
-   void OnTimer(const TA_Context &ctx, const TA_State &st) { (void)ctx; (void)st; }
+   void OnTimer(const TA_Context &ctx, const TA_State &st) { }
 
    void OnChartEvent(const TA_Context &ctx, const TA_State &st, const int id, const long &lparam, const double &dparam, const string &sparam)
    {
-      (void)ctx; (void)st; (void)lparam; (void)dparam;
       if(!m_created) return;
 
       // enum values expected by TA_PositionManager::ExecuteCloseCommand():
@@ -145,7 +144,7 @@ public:
          TA_OnUI_CloseCommand((ENUM_TA_CLOSE_CMD)7);
    }
 
-   void SyncFromState(const TA_Context &ctx, const TA_State &st) { (void)ctx; (void)st; }
+   void SyncFromState(const TA_Context &ctx, const TA_State &st) { }
 };
 
 #endif // __UI_CLOSETAB_MQH__

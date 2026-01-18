@@ -245,16 +245,4 @@ inline bool TA__WriteAllText(const string path, const string text, const bool co
    return true;
 }
 
-// -----------------------------
-// Broker-rules macros
-//
-// TA_RR and some modules operate on TA_BrokerRules but include TA_Utils
-// before TA_BrokerRules. Using macros avoids cyclic type-dependency.
-// These macros compile where they are USED (after TA_BrokerRules is visible).
-// -----------------------------
-
-#define TA_NormalizePrice(br, price) NormalizeDouble((price), (br).Digits())
-#define TA_PointsBetweenPrices(br, a, b) ( ( (br).Point()<=0.0 ) ? 0.0 : (MathAbs((a)-(b)) / (br).Point()) )
-#define TA_PriceFromPoints(br, base_price, points, is_buy) ( (is_buy) ? ((base_price) + ((points) * (br).Point())) : ((base_price) - ((points) * (br).Point())) )
-
 #endif // __TA_UTILS_MQH__

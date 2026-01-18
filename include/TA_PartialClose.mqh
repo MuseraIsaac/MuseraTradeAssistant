@@ -302,7 +302,6 @@ public:
 
    bool Init(const TA_Context &ctx, const TA_State &st, const TA_BrokerRules &br)
    {
-      (void)st;
       m_ctx = ctx;
       m_br  = br;
       m_count = 0;
@@ -311,7 +310,6 @@ public:
 
    void SyncConfig(const TA_Context &ctx, const TA_State &st)
    {
-      (void)st;
       m_ctx = ctx;
    }
 
@@ -381,7 +379,6 @@ public:
                            const MqlTradeRequest &request,
                            const MqlTradeResult &result)
    {
-      (void)ctx; (void)st; (void)request; (void)result;
 
       // Conservative cleanup on position/deal changes.
       if(trans.type == TRADE_TRANSACTION_POSITION ||
@@ -397,7 +394,6 @@ public:
    void OnChartEvent(const TA_Context &ctx, const TA_State &st,
                      const int id, const long &lparam, const double &dparam, const string &sparam)
    {
-      (void)ctx; (void)st; (void)id; (void)lparam; (void)dparam; (void)sparam;
    }
 };
 

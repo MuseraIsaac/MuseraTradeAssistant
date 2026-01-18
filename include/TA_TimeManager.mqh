@@ -171,7 +171,6 @@ private:
 
    void Evaluate(const TA_Context &ctx, const TA_State &st)
    {
-      (void)ctx; // currently unused, but kept for future (per-symbol schedules, etc.)
 
       m_now_utc  = TA_NowUTC();
       m_now_rule = TA_UTCToOffset(m_now_utc, st.utc_offset_seconds);

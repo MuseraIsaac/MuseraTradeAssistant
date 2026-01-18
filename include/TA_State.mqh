@@ -77,8 +77,9 @@ struct TA_TPLevel
 //+------------------------------------------------------------------+
 //| TA_State                                                         |
 //+------------------------------------------------------------------+
-struct TA_State
+class TA_State
 {
+public:
    // ---------------- UI ----------------
    ENUM_TA_APP_TAB ui_active_tab;
    bool            ui_minimized;
@@ -107,6 +108,13 @@ struct TA_State
    double              risk_money;
 
    // ---------------- SL/TP & RR ----------------
+   ENUM_TA_SL_MODE sl_mode;
+   ENUM_TA_TP_MODE tp_mode;
+   double sl_price;
+   double tp_price;
+   bool   sl_enabled;
+   bool   tp_enabled;
+   int    slippage_points;
    int    sl_points;
    int    tp_points;
    double rr_target;
@@ -117,9 +125,21 @@ struct TA_State
    bool                  tp_partials_enabled;
    ENUM_TA_PARTIAL_SCHEMA tp_partials_schema;
    ENUM_TA_PARTIAL_TRIGGER tp_partials_trigger;
+   ENUM_TA_PARTIALS_MODE tp_partials_mode;
 
    // New style partial config
    TA_TPLevel tp_levels[TA_MAX_TP_LEVELS];
+
+   // Legacy partial config (used by older UI/widgets)
+   double tp1_at_r;
+   double tp2_at_r;
+   double tp3_at_r;
+   int    tp1_at_points;
+   int    tp2_at_points;
+   int    tp3_at_points;
+   double tp1_close_pct;
+   double tp2_close_pct;
+   double tp3_close_pct;
 
    // Convenience (also used by some earlier implementations)
    bool   tp_move_sl_to_be_after_tp1;
@@ -131,6 +151,8 @@ struct TA_State
    double          be_at_r;
    int             be_at_points;
    int             be_plus_points;
+   int             be_lock_points;
+   int             be_offset_points;
    bool            be_once;
 
    // ---------------- Trailing ----------------
@@ -206,6 +228,7 @@ struct TA_State
 
       order_kind = TA_ORDER_MARKET;
       deviation_points = TA_DFLT_DEVIATION_POINTS;
+      slippage_points = deviation_points;
       order_comment = TA_PROJECT_SHORT;
       allow_multiple_entries = true;
 
@@ -221,6 +244,12 @@ struct TA_State
       risk_percent = TA_DFLT_RISK_PERCENT;
       risk_money = TA_DFLT_RISK_MONEY;
 
+      sl_mode = TA_SL_POINTS;
+      tp_mode = TA_TP_POINTS;
+      sl_price = 0.0;
+      tp_price = 0.0;
+      sl_enabled = false;
+      tp_enabled = false;
       sl_points = 0;
       tp_points = 0;
       rr_target = TA_DFLT_RR;
@@ -230,8 +259,18 @@ struct TA_State
       tp_partials_enabled = false;
       tp_partials_schema = TA_PARTIAL_OFF;
       tp_partials_trigger = TA_PARTIAL_TRIGGER_BY_R;
+      tp_partials_mode = TA_PARTIALS_BY_R;
       for(int i=0;i<TA_MAX_TP_LEVELS;i++)
          tp_levels[i].Reset();
+      tp1_at_r = TA_DFLT_TP1_R;
+      tp2_at_r = TA_DFLT_TP2_R;
+      tp3_at_r = TA_DFLT_TP3_R;
+      tp1_at_points = 0;
+      tp2_at_points = 0;
+      tp3_at_points = 0;
+      tp1_close_pct = TA_DFLT_TP1_CLOSE_PCT;
+      tp2_close_pct = TA_DFLT_TP2_CLOSE_PCT;
+      tp3_close_pct = TA_DFLT_TP3_CLOSE_PCT;
 
       tp_move_sl_to_be_after_tp1 = false;
       tp_start_trailing_after_tp1 = false;
@@ -241,6 +280,8 @@ struct TA_State
       be_at_r = TA_DFLT_BE_TRIGGER_R;
       be_at_points = 0;
       be_plus_points = 0;
+      be_lock_points = 0;
+      be_offset_points = 0;
       be_once = true;
 
       trailing_enabled = false;
@@ -308,6 +349,10 @@ struct TA_State
       // SL/TP defaults from constants (pips -> points)
       sl_points = (int)MathRound(TA_PriceToPoints(sym, TA_PipsToPrice(sym, TA_DFLT_SL_PIPS)));
       tp_points = (int)MathRound(TA_PriceToPoints(sym, TA_PipsToPrice(sym, TA_DFLT_TP_PIPS)));
+      sl_mode = (sl_points > 0 ? TA_SL_POINTS : TA_SL_NONE);
+      tp_mode = (tp_points > 0 ? TA_TP_POINTS : TA_TP_NONE);
+      sl_enabled = (sl_points > 0);
+      tp_enabled = (tp_points > 0);
 
       // Partial defaults (disabled)
       tp_levels[0].enabled = true;
@@ -325,8 +370,17 @@ struct TA_State
       tp_levels[2].target = TA_DFLT_TP3_R;
       tp_levels[2].close_percent = TA_DFLT_TP3_CLOSE_PCT;
 
+      tp1_at_r = TA_DFLT_TP1_R;
+      tp2_at_r = TA_DFLT_TP2_R;
+      tp3_at_r = TA_DFLT_TP3_R;
+      tp1_close_pct = TA_DFLT_TP1_CLOSE_PCT;
+      tp2_close_pct = TA_DFLT_TP2_CLOSE_PCT;
+      tp3_close_pct = TA_DFLT_TP3_CLOSE_PCT;
+
       // BE points default based on 10 pips
       be_at_points = (int)MathRound(TA_PriceToPoints(sym, TA_PipsToPrice(sym, 10.0)));
+      be_lock_points = be_plus_points;
+      be_offset_points = be_plus_points;
 
       Sanitize(sym);
    }
@@ -350,6 +404,18 @@ struct TA_State
          tp_levels[i].close_percent = TA_Clamp(tp_levels[i].close_percent, 0.0, 100.0);
          if(!TA_IsFinite(tp_levels[i].target)) tp_levels[i].target = 0.0;
       }
+
+      tp1_close_pct = TA_Clamp(tp1_close_pct, 0.0, 100.0);
+      tp2_close_pct = TA_Clamp(tp2_close_pct, 0.0, 100.0);
+      tp3_close_pct = TA_Clamp(tp3_close_pct, 0.0, 100.0);
+
+      if(sl_price < 0.0 || !TA_IsFinite(sl_price)) sl_price = 0.0;
+      if(tp_price < 0.0 || !TA_IsFinite(tp_price)) tp_price = 0.0;
+
+      if(slippage_points < 0) slippage_points = 0;
+
+      if(be_lock_points < 0) be_lock_points = 0;
+      if(be_offset_points < 0) be_offset_points = 0;
 
       // Sync legacy
       SyncLegacy();
@@ -377,6 +443,50 @@ struct TA_State
          // both % modes
          risk_percent = risk_value;
       }
+
+      slippage_points = deviation_points;
+      tp_from_rr = (tp_mode == TA_TP_RR);
+      sl_required = (sl_mode != TA_SL_NONE);
+      sl_enabled = (sl_mode != TA_SL_NONE) &&
+                   ((sl_mode == TA_SL_POINTS && sl_points > 0) ||
+                    (sl_mode == TA_SL_PRICE && sl_price > 0.0));
+      tp_enabled = (tp_mode != TA_TP_NONE) &&
+                   ((tp_mode == TA_TP_POINTS && tp_points > 0) ||
+                    (tp_mode == TA_TP_PRICE && tp_price > 0.0) ||
+                    (tp_mode == TA_TP_RR && rr_target > 0.0));
+
+      tp_partials_mode = (tp_partials_trigger == TA_PARTIAL_TRIGGER_BY_R
+                          ? TA_PARTIALS_BY_R
+                          : TA_PARTIALS_BY_POINTS);
+
+      // Legacy partials mirror tp_levels when available
+      for(int i=0;i<TA_MAX_TP_LEVELS;i++)
+      {
+         if(!tp_levels[i].enabled)
+            continue;
+
+         if(i == 0)
+         {
+            tp1_close_pct = tp_levels[i].close_percent;
+            if(tp_levels[i].type == TA_TARGET_R) tp1_at_r = tp_levels[i].target;
+            else if(tp_levels[i].type == TA_TARGET_POINTS) tp1_at_points = (int)MathRound(tp_levels[i].target);
+         }
+         else if(i == 1)
+         {
+            tp2_close_pct = tp_levels[i].close_percent;
+            if(tp_levels[i].type == TA_TARGET_R) tp2_at_r = tp_levels[i].target;
+            else if(tp_levels[i].type == TA_TARGET_POINTS) tp2_at_points = (int)MathRound(tp_levels[i].target);
+         }
+         else if(i == 2)
+         {
+            tp3_close_pct = tp_levels[i].close_percent;
+            if(tp_levels[i].type == TA_TARGET_R) tp3_at_r = tp_levels[i].target;
+            else if(tp_levels[i].type == TA_TARGET_POINTS) tp3_at_points = (int)MathRound(tp_levels[i].target);
+         }
+      }
+
+      be_lock_points = be_plus_points;
+      be_offset_points = be_plus_points;
    }
 
    // ---------------- Serialization ----------------
@@ -393,6 +503,7 @@ struct TA_State
 
       out_text += "order_kind=" + IntegerToString((int)order_kind) + "\n";
       out_text += "deviation_points=" + IntegerToString(deviation_points) + "\n";
+      out_text += "slippage_points=" + IntegerToString(slippage_points) + "\n";
       out_text += "order_comment=" + order_comment + "\n";
       out_text += "allow_multiple_entries=" + IntegerToString(allow_multiple_entries?1:0) + "\n";
 
@@ -403,6 +514,12 @@ struct TA_State
       out_text += "max_lot_cap=" + DoubleToString(max_lot_cap, 8) + "\n";
       out_text += "round_to_step=" + IntegerToString(round_to_step?1:0) + "\n";
 
+      out_text += "sl_mode=" + IntegerToString((int)sl_mode) + "\n";
+      out_text += "tp_mode=" + IntegerToString((int)tp_mode) + "\n";
+      out_text += "sl_price=" + DoubleToString(sl_price, 8) + "\n";
+      out_text += "tp_price=" + DoubleToString(tp_price, 8) + "\n";
+      out_text += "sl_enabled=" + IntegerToString(sl_enabled?1:0) + "\n";
+      out_text += "tp_enabled=" + IntegerToString(tp_enabled?1:0) + "\n";
       out_text += "sl_points=" + IntegerToString(sl_points) + "\n";
       out_text += "tp_points=" + IntegerToString(tp_points) + "\n";
       out_text += "rr_target=" + DoubleToString(rr_target, 8) + "\n";
@@ -412,8 +529,18 @@ struct TA_State
       out_text += "tp_partials_enabled=" + IntegerToString(tp_partials_enabled?1:0) + "\n";
       out_text += "tp_partials_schema=" + IntegerToString((int)tp_partials_schema) + "\n";
       out_text += "tp_partials_trigger=" + IntegerToString((int)tp_partials_trigger) + "\n";
+      out_text += "tp_partials_mode=" + IntegerToString((int)tp_partials_mode) + "\n";
       out_text += "tp_move_sl_to_be_after_tp1=" + IntegerToString(tp_move_sl_to_be_after_tp1?1:0) + "\n";
       out_text += "tp_start_trailing_after_tp1=" + IntegerToString(tp_start_trailing_after_tp1?1:0) + "\n";
+      out_text += "tp1_at_r=" + DoubleToString(tp1_at_r, 8) + "\n";
+      out_text += "tp2_at_r=" + DoubleToString(tp2_at_r, 8) + "\n";
+      out_text += "tp3_at_r=" + DoubleToString(tp3_at_r, 8) + "\n";
+      out_text += "tp1_at_points=" + IntegerToString(tp1_at_points) + "\n";
+      out_text += "tp2_at_points=" + IntegerToString(tp2_at_points) + "\n";
+      out_text += "tp3_at_points=" + IntegerToString(tp3_at_points) + "\n";
+      out_text += "tp1_close_pct=" + DoubleToString(tp1_close_pct, 8) + "\n";
+      out_text += "tp2_close_pct=" + DoubleToString(tp2_close_pct, 8) + "\n";
+      out_text += "tp3_close_pct=" + DoubleToString(tp3_close_pct, 8) + "\n";
 
       for(int i=0;i<TA_MAX_TP_LEVELS;i++)
       {
@@ -428,6 +555,8 @@ struct TA_State
       out_text += "be_at_r=" + DoubleToString(be_at_r, 8) + "\n";
       out_text += "be_at_points=" + IntegerToString(be_at_points) + "\n";
       out_text += "be_plus_points=" + IntegerToString(be_plus_points) + "\n";
+      out_text += "be_lock_points=" + IntegerToString(be_lock_points) + "\n";
+      out_text += "be_offset_points=" + IntegerToString(be_offset_points) + "\n";
       out_text += "be_once=" + IntegerToString(be_once?1:0) + "\n";
 
       out_text += "trailing_enabled=" + IntegerToString(trailing_enabled?1:0) + "\n";
@@ -508,6 +637,7 @@ struct TA_State
 
          else if(k=="order_kind") order_kind=(ENUM_TA_ORDER_KIND)StringToInteger(v);
          else if(k=="deviation_points") deviation_points=(int)StringToInteger(v);
+         else if(k=="slippage_points") slippage_points=(int)StringToInteger(v);
          else if(k=="order_comment") order_comment=v;
          else if(k=="allow_multiple_entries") allow_multiple_entries=(StringToInteger(v)!=0);
 
@@ -518,6 +648,12 @@ struct TA_State
          else if(k=="max_lot_cap") max_lot_cap=StringToDouble(v);
          else if(k=="round_to_step") round_to_step=(StringToInteger(v)!=0);
 
+         else if(k=="sl_mode") sl_mode=(ENUM_TA_SL_MODE)StringToInteger(v);
+         else if(k=="tp_mode") tp_mode=(ENUM_TA_TP_MODE)StringToInteger(v);
+         else if(k=="sl_price") sl_price=StringToDouble(v);
+         else if(k=="tp_price") tp_price=StringToDouble(v);
+         else if(k=="sl_enabled") sl_enabled=(StringToInteger(v)!=0);
+         else if(k=="tp_enabled") tp_enabled=(StringToInteger(v)!=0);
          else if(k=="sl_points") sl_points=(int)StringToInteger(v);
          else if(k=="tp_points") tp_points=(int)StringToInteger(v);
          else if(k=="rr_target") rr_target=StringToDouble(v);
@@ -527,14 +663,26 @@ struct TA_State
          else if(k=="tp_partials_enabled") tp_partials_enabled=(StringToInteger(v)!=0);
          else if(k=="tp_partials_schema") tp_partials_schema=(ENUM_TA_PARTIAL_SCHEMA)StringToInteger(v);
          else if(k=="tp_partials_trigger") tp_partials_trigger=(ENUM_TA_PARTIAL_TRIGGER)StringToInteger(v);
+         else if(k=="tp_partials_mode") tp_partials_mode=(ENUM_TA_PARTIALS_MODE)StringToInteger(v);
          else if(k=="tp_move_sl_to_be_after_tp1") tp_move_sl_to_be_after_tp1=(StringToInteger(v)!=0);
          else if(k=="tp_start_trailing_after_tp1") tp_start_trailing_after_tp1=(StringToInteger(v)!=0);
+         else if(k=="tp1_at_r") tp1_at_r=StringToDouble(v);
+         else if(k=="tp2_at_r") tp2_at_r=StringToDouble(v);
+         else if(k=="tp3_at_r") tp3_at_r=StringToDouble(v);
+         else if(k=="tp1_at_points") tp1_at_points=(int)StringToInteger(v);
+         else if(k=="tp2_at_points") tp2_at_points=(int)StringToInteger(v);
+         else if(k=="tp3_at_points") tp3_at_points=(int)StringToInteger(v);
+         else if(k=="tp1_close_pct") tp1_close_pct=StringToDouble(v);
+         else if(k=="tp2_close_pct") tp2_close_pct=StringToDouble(v);
+         else if(k=="tp3_close_pct") tp3_close_pct=StringToDouble(v);
 
          else if(k=="be_enabled") be_enabled=(StringToInteger(v)!=0);
          else if(k=="be_mode") be_mode=(ENUM_TA_BE_MODE)StringToInteger(v);
          else if(k=="be_at_r") be_at_r=StringToDouble(v);
          else if(k=="be_at_points") be_at_points=(int)StringToInteger(v);
          else if(k=="be_plus_points") be_plus_points=(int)StringToInteger(v);
+         else if(k=="be_lock_points") be_lock_points=(int)StringToInteger(v);
+         else if(k=="be_offset_points") be_offset_points=(int)StringToInteger(v);
          else if(k=="be_once") be_once=(StringToInteger(v)!=0);
 
          else if(k=="trailing_enabled") trailing_enabled=(StringToInteger(v)!=0);
